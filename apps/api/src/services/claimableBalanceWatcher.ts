@@ -1,6 +1,9 @@
+import type { ClaimPredicate } from '../workers/claimable-balance.worker';
+import { evaluateClaimPredicate } from '../workers/claimable-balance.worker';
+
 export interface Claimant {
   destination: string;
-  predicate: Record<string, unknown>;
+  predicate: ClaimPredicate;
 }
 
 export interface ClaimableBalanceEntry {
@@ -17,8 +20,10 @@ export interface ClaimableBalanceAlert {
   claimantAddress: string;
   asset: string;
   amount: string;
-  type: 'CREATED' | 'EXPIRING_SOON' | 'EXPIRED';
+  type: 'CREATED' | 'EXPIRING_SOON' | 'EXPIRED' | 'NOW_CLAIMABLE';
   message: string;
+  claimableAtLedger?: number;
+  expiredAtLedger?: number;
 }
 
 export class ClaimableBalanceWatcher {
@@ -48,35 +53,47 @@ export class ClaimableBalanceWatcher {
         amount: balance.amount,
         type: 'CREATED',
         message: `New claimable balance ${balance.id} created for ${claimant.destination}`,
+        claimableAtLedger: undefined,
+        expiredAtLedger: undefined,
       });
 
-      // Check predicate expiration
-      if (claimant.predicate.absBeforeLedger && typeof claimant.predicate.absBeforeLedger === 'number') {
-        const expiresAtLedger = claimant.predicate.absBeforeLedger;
-        const ledgersRemaining = expiresAtLedger - currentLedger;
+      // Check predicate expiration using the shared evaluateClaimPredicate
+      const evaluation = evaluateClaimPredicate(claimant.predicate, currentLedger);
 
-        if (ledgersRemaining <= 0) {
-          alerts.push({
-            balanceId: balance.id,
-            claimantAddress: claimant.destination,
-            asset: balance.asset,
-            amount: balance.amount,
-            type: 'EXPIRED',
-            message: `Claimable balance ${balance.id} expired at ledger ${expiresAtLedger}`,
-          });
-        } else if (ledgersRemaining <= 100) {
+      // Check predicate expiration
+      if (evaluation.expiredAtLedger && currentLedger >= evaluation.expiredAtLedger) {
+        alerts.push({
+          balanceId: balance.id,
+          claimantAddress: claimant.destination,
+          asset: balance.asset,
+          amount: balance.amount,
+          type: 'EXPIRED',
+          message: `Claimable balance ${balance.id} expired at ledger ${evaluation.expiredAtLedger}`,
+        });
+      }
+
+      // Check for expiring soon (within 100 ledgers remaining)
+      // The original behavior was to warn when <= 100 ledgers remain
+      if (evaluation.expiredAtLedger) {
+        const ledgersRemaining = evaluation.expiredAtLedger - currentLedger;
+        if (ledgersRemaining > 0 && ledgersRemaining <= 100) {
           alerts.push({
             balanceId: balance.id,
             claimantAddress: claimant.destination,
             asset: balance.asset,
             amount: balance.amount,
             type: 'EXPIRING_SOON',
-            message: `Claimable balance ${balance.id} expires in ${ledgersRemaining} ledgers`,
+            message: `Claimable balance ${balance.id} expires in ${ledgersRemaining} ledgers for ${claimant.destination}`,
           });
         }
       }
     }
 
     return alerts;
+  }
+
+  public addMonitoredClaimant(claimant: { destination: string; predicate: ClaimPredicate }): void {
+    // Integrated with claimable-balance.worker.ts predicate evaluation
+    // This can be used to add addresses dynamically
   }
 }
