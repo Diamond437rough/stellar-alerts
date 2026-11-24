@@ -1,6 +1,7 @@
 import React from 'react';
 import { WalletDTO } from '@stellar-alerts/shared';
 import { CopyButton } from '@/components/ui/CopyButton';
+import { AddressTruncate } from '@/components/common/AddressTruncate';
 import { WalletTagSelector } from '@/components/wallets/WalletTagSelector';
 import { collectTags } from '@/lib/wallet-tags';
 
@@ -110,9 +111,12 @@ export const WalletList: React.FC<WalletListProps> = ({
                     {wallet.label || 'Unnamed Wallet'}
                   </div>
                   <div className="flex items-center gap-1 text-xs text-slate-400 font-mono mt-1">
-                    <span className="truncate">
-                      {wallet.publicKey.substring(0, 8)}...{wallet.publicKey.substring(48)}
-                    </span>
+                    <AddressTruncate
+                      value={wallet.publicKey}
+                      prefixChars={8}
+                      suffixChars={8}
+                      className="truncate"
+                    />
                     <CopyButton
                       text={wallet.publicKey}
                       label="Copy public key"

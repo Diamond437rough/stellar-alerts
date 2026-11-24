@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { PaymentDTO, filterPayments, extractAvailableAssets } from '@stellar-alerts/shared';
 import { CopyButton } from '@/components/ui/CopyButton';
+import { AddressTruncate } from '@/components/common/AddressTruncate';
 import { formatAssetAmount } from './currency';
 import { useCurrencyPreference } from './CurrencyPreference';
 
@@ -290,12 +291,8 @@ export const PaymentTable: React.FC<PaymentTableProps> = ({ payments = [], isLoa
                   </td>
                   <td className="py-3.5 px-4 font-mono text-xs text-slate-400 whitespace-nowrap">
                     {payment.fromAddress ? (
-                      <span className="flex items-center gap-1.5" title={payment.fromAddress}>
-                        <span>
-                          {payment.fromAddress.length > 16
-                            ? `${payment.fromAddress.substring(0, 8)}...${payment.fromAddress.substring(payment.fromAddress.length - 8)}`
-                            : payment.fromAddress}
-                        </span>
+                      <span className="flex items-center gap-1.5">
+                        <AddressTruncate value={payment.fromAddress} prefixChars={8} suffixChars={8} />
                         <CopyButton
                           text={payment.fromAddress}
                           label="Copy sender address"
@@ -314,7 +311,11 @@ export const PaymentTable: React.FC<PaymentTableProps> = ({ payments = [], isLoa
                         aria-label={`View transaction ${payment.txHash} on Stellar Explorer`}
                         className="text-blue-400 hover:text-blue-300 underline underline-offset-2 transition-colors flex items-center gap-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/70 focus-visible:rounded"
                       >
-                        <span>{payment.txHash ? `${payment.txHash.substring(0, 8)}...` : 'View Tx'}</span>
+                        {payment.txHash ? (
+                          <AddressTruncate value={payment.txHash} prefixChars={8} suffixChars={4} />
+                        ) : (
+                          'View Tx'
+                        )}
                         <span className="text-[10px]" aria-hidden="true">↗</span>
                       </a>
                       {payment.txHash && (
