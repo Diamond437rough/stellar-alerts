@@ -149,7 +149,9 @@ export const WalletList: React.FC<WalletListProps> = ({
                     <WalletTagSelector
                       wallet={wallet}
                       availableTags={availableTags}
-                      onSave={onUpdateWalletMetadata}
+                      onSave={(walletId, tags, colorHex) =>
+                        onUpdateWalletMetadata(walletId, { tags, colorHex })
+                      }
                       className="mt-2"
                     />
                   ) : null}
