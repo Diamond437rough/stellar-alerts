@@ -445,7 +445,9 @@ export const ModelName = {
   RefreshSession: 'RefreshSession',
   RefreshTokenHistory: 'RefreshTokenHistory',
   ContractWasmAudit: 'ContractWasmAudit',
-  ContractAbiRegistry: 'ContractAbiRegistry'
+  ContractAbiRegistry: 'ContractAbiRegistry',
+  TimeSeriesRollup: 'TimeSeriesRollup',
+  SorobanRentObservation: 'SorobanRentObservation'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -461,7 +463,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "webAuthnCredential" | "apiKey" | "wallet" | "ingestionCursor" | "payment" | "paymentArchive" | "archiveManifest" | "archiveCursor" | "outboxEvent" | "notificationPreference" | "deliveryLog" | "paymentChecksum" | "dailyChecksumRoot" | "alertRule" | "alertRuleDispatchLog" | "telegramSyncCode" | "whatsAppDeliveryLog" | "webhook" | "webhookLog" | "webhookCircuitBreaker" | "exportJob" | "transactionSimulation" | "sorobanEventSnapshot" | "sorobanStateAudit" | "sorobanContractSubscription" | "sacTokenMintBurnEvent" | "sacTokenSupply" | "multisigTreasury" | "multisigSignerWatcher" | "pendingMultisigTransaction" | "anchorTransactionWatch" | "anchorTransactionEvent" | "dexSwapWatch" | "sorobanTopicIndex" | "sorobanTopicIndexCursor" | "dexSwapEvent" | "securityAuditLog" | "notificationDelivery" | "notificationDeliveryAttempt" | "deduplicationLog" | "deadLetter" | "webhookSandboxReplay" | "deadLetterAudit" | "mfaRecoveryCode" | "refreshSession" | "refreshTokenHistory" | "contractWasmAudit" | "contractAbiRegistry"
+    modelProps: "user" | "apiKey" | "wallet" | "ingestionCursor" | "payment" | "paymentArchive" | "archiveManifest" | "archiveCursor" | "outboxEvent" | "notificationPreference" | "deliveryLog" | "paymentChecksum" | "dailyChecksumRoot" | "alertRule" | "alertRuleDispatchLog" | "telegramSyncCode" | "whatsAppDeliveryLog" | "webhook" | "webhookLog" | "webhookCircuitBreaker" | "exportJob" | "transactionSimulation" | "sorobanEventSnapshot" | "sorobanStateAudit" | "sorobanContractSubscription" | "sacTokenMintBurnEvent" | "sacTokenSupply" | "multisigTreasury" | "multisigSignerWatcher" | "pendingMultisigTransaction" | "anchorTransactionWatch" | "anchorTransactionEvent" | "dexSwapWatch" | "sorobanTopicIndex" | "sorobanTopicIndexCursor" | "dexSwapEvent" | "securityAuditLog" | "notificationDelivery" | "notificationDeliveryAttempt" | "deduplicationLog" | "deadLetter" | "webhookSandboxReplay" | "deadLetterAudit" | "mfaRecoveryCode" | "refreshSession" | "refreshTokenHistory" | "contractWasmAudit" | "contractAbiRegistry" | "timeSeriesRollup" | "sorobanRentObservation"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -4091,6 +4093,154 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    TimeSeriesRollup: {
+      payload: Prisma.$TimeSeriesRollupPayload<ExtArgs>
+      fields: Prisma.TimeSeriesRollupFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.TimeSeriesRollupFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TimeSeriesRollupPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.TimeSeriesRollupFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TimeSeriesRollupPayload>
+        }
+        findFirst: {
+          args: Prisma.TimeSeriesRollupFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TimeSeriesRollupPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.TimeSeriesRollupFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TimeSeriesRollupPayload>
+        }
+        findMany: {
+          args: Prisma.TimeSeriesRollupFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TimeSeriesRollupPayload>[]
+        }
+        create: {
+          args: Prisma.TimeSeriesRollupCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TimeSeriesRollupPayload>
+        }
+        createMany: {
+          args: Prisma.TimeSeriesRollupCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.TimeSeriesRollupCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TimeSeriesRollupPayload>[]
+        }
+        delete: {
+          args: Prisma.TimeSeriesRollupDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TimeSeriesRollupPayload>
+        }
+        update: {
+          args: Prisma.TimeSeriesRollupUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TimeSeriesRollupPayload>
+        }
+        deleteMany: {
+          args: Prisma.TimeSeriesRollupDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.TimeSeriesRollupUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.TimeSeriesRollupUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TimeSeriesRollupPayload>[]
+        }
+        upsert: {
+          args: Prisma.TimeSeriesRollupUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TimeSeriesRollupPayload>
+        }
+        aggregate: {
+          args: Prisma.TimeSeriesRollupAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateTimeSeriesRollup>
+        }
+        groupBy: {
+          args: Prisma.TimeSeriesRollupGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.TimeSeriesRollupGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.TimeSeriesRollupCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.TimeSeriesRollupCountAggregateOutputType> | number
+        }
+      }
+    }
+    SorobanRentObservation: {
+      payload: Prisma.$SorobanRentObservationPayload<ExtArgs>
+      fields: Prisma.SorobanRentObservationFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.SorobanRentObservationFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SorobanRentObservationPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.SorobanRentObservationFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SorobanRentObservationPayload>
+        }
+        findFirst: {
+          args: Prisma.SorobanRentObservationFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SorobanRentObservationPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.SorobanRentObservationFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SorobanRentObservationPayload>
+        }
+        findMany: {
+          args: Prisma.SorobanRentObservationFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SorobanRentObservationPayload>[]
+        }
+        create: {
+          args: Prisma.SorobanRentObservationCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SorobanRentObservationPayload>
+        }
+        createMany: {
+          args: Prisma.SorobanRentObservationCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.SorobanRentObservationCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SorobanRentObservationPayload>[]
+        }
+        delete: {
+          args: Prisma.SorobanRentObservationDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SorobanRentObservationPayload>
+        }
+        update: {
+          args: Prisma.SorobanRentObservationUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SorobanRentObservationPayload>
+        }
+        deleteMany: {
+          args: Prisma.SorobanRentObservationDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.SorobanRentObservationUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.SorobanRentObservationUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SorobanRentObservationPayload>[]
+        }
+        upsert: {
+          args: Prisma.SorobanRentObservationUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SorobanRentObservationPayload>
+        }
+        aggregate: {
+          args: Prisma.SorobanRentObservationAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateSorobanRentObservation>
+        }
+        groupBy: {
+          args: Prisma.SorobanRentObservationGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.SorobanRentObservationGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.SorobanRentObservationCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.SorobanRentObservationCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -4904,6 +5054,39 @@ export const ContractAbiRegistryScalarFieldEnum = {
 export type ContractAbiRegistryScalarFieldEnum = (typeof ContractAbiRegistryScalarFieldEnum)[keyof typeof ContractAbiRegistryScalarFieldEnum]
 
 
+export const TimeSeriesRollupScalarFieldEnum = {
+  id: 'id',
+  asset: 'asset',
+  interval: 'interval',
+  bucketStart: 'bucketStart',
+  count: 'count',
+  volume: 'volume',
+  minAmount: 'minAmount',
+  maxAmount: 'maxAmount',
+  uniqueSenders: 'uniqueSenders',
+  updatedAt: 'updatedAt'
+} as const
+
+export type TimeSeriesRollupScalarFieldEnum = (typeof TimeSeriesRollupScalarFieldEnum)[keyof typeof TimeSeriesRollupScalarFieldEnum]
+
+
+export const SorobanRentObservationScalarFieldEnum = {
+  id: 'id',
+  contractId: 'contractId',
+  ledgerKey: 'ledgerKey',
+  durability: 'durability',
+  byteSize: 'byteSize',
+  liveUntilLedgerSeq: 'liveUntilLedgerSeq',
+  ledgerSeq: 'ledgerSeq',
+  previousByteSize: 'previousByteSize',
+  previousLedgerSeq: 'previousLedgerSeq',
+  warningTier: 'warningTier',
+  updatedAt: 'updatedAt'
+} as const
+
+export type SorobanRentObservationScalarFieldEnum = (typeof SorobanRentObservationScalarFieldEnum)[keyof typeof SorobanRentObservationScalarFieldEnum]
+
+
 export const SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -5248,6 +5431,8 @@ export type GlobalOmitConfig = {
   refreshTokenHistory?: Prisma.RefreshTokenHistoryOmit
   contractWasmAudit?: Prisma.ContractWasmAuditOmit
   contractAbiRegistry?: Prisma.ContractAbiRegistryOmit
+  timeSeriesRollup?: Prisma.TimeSeriesRollupOmit
+  sorobanRentObservation?: Prisma.SorobanRentObservationOmit
 }
 
 /* Types for Logging */

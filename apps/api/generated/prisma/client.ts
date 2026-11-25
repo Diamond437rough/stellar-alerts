@@ -284,3 +284,13 @@ export type ContractWasmAudit = Prisma.ContractWasmAuditModel
  * 
  */
 export type ContractAbiRegistry = Prisma.ContractAbiRegistryModel
+/**
+ * Model TimeSeriesRollup
+ * 
+ */
+export type TimeSeriesRollup = Prisma.TimeSeriesRollupModel
+/**
+ * Model SorobanRentObservation
+ * 
+ */
+export type SorobanRentObservation = Prisma.SorobanRentObservationModel

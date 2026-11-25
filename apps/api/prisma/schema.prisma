@@ -1078,3 +1078,38 @@ model ContractAbiRegistry {
   @@index([extractedAt])
 }
 
+model TimeSeriesRollup {
+  id            String   @id @default(cuid())
+  asset         String
+  interval      String
+  bucketStart   DateTime
+  count         Int
+  volume        Decimal  @db.Decimal(30, 7)
+  minAmount     Decimal  @db.Decimal(30, 7)
+  maxAmount     Decimal  @db.Decimal(30, 7)
+  uniqueSenders String[] @default([])
+  updatedAt     DateTime @updatedAt
+
+  @@unique([asset, interval, bucketStart])
+  @@index([interval, bucketStart])
+  @@index([asset, interval, bucketStart])
+}
+
+model SorobanRentObservation {
+  id                 String   @id @default(cuid())
+  contractId         String
+  ledgerKey          String
+  durability         String
+  byteSize           Int
+  liveUntilLedgerSeq Int
+  ledgerSeq          Int
+  previousByteSize   Int?
+  previousLedgerSeq  Int?
+  warningTier        String?
+  updatedAt          DateTime @updatedAt
+
+  @@unique([contractId, ledgerKey])
+  @@index([contractId, ledgerSeq])
+  @@index([liveUntilLedgerSeq])
+}
+

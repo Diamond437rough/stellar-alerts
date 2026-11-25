@@ -99,7 +99,9 @@ export const ModelName = {
   RefreshSession: 'RefreshSession',
   RefreshTokenHistory: 'RefreshTokenHistory',
   ContractWasmAudit: 'ContractWasmAudit',
-  ContractAbiRegistry: 'ContractAbiRegistry'
+  ContractAbiRegistry: 'ContractAbiRegistry',
+  TimeSeriesRollup: 'TimeSeriesRollup',
+  SorobanRentObservation: 'SorobanRentObservation'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -890,6 +892,39 @@ export const ContractAbiRegistryScalarFieldEnum = {
 } as const
 
 export type ContractAbiRegistryScalarFieldEnum = (typeof ContractAbiRegistryScalarFieldEnum)[keyof typeof ContractAbiRegistryScalarFieldEnum]
+
+
+export const TimeSeriesRollupScalarFieldEnum = {
+  id: 'id',
+  asset: 'asset',
+  interval: 'interval',
+  bucketStart: 'bucketStart',
+  count: 'count',
+  volume: 'volume',
+  minAmount: 'minAmount',
+  maxAmount: 'maxAmount',
+  uniqueSenders: 'uniqueSenders',
+  updatedAt: 'updatedAt'
+} as const
+
+export type TimeSeriesRollupScalarFieldEnum = (typeof TimeSeriesRollupScalarFieldEnum)[keyof typeof TimeSeriesRollupScalarFieldEnum]
+
+
+export const SorobanRentObservationScalarFieldEnum = {
+  id: 'id',
+  contractId: 'contractId',
+  ledgerKey: 'ledgerKey',
+  durability: 'durability',
+  byteSize: 'byteSize',
+  liveUntilLedgerSeq: 'liveUntilLedgerSeq',
+  ledgerSeq: 'ledgerSeq',
+  previousByteSize: 'previousByteSize',
+  previousLedgerSeq: 'previousLedgerSeq',
+  warningTier: 'warningTier',
+  updatedAt: 'updatedAt'
+} as const
+
+export type SorobanRentObservationScalarFieldEnum = (typeof SorobanRentObservationScalarFieldEnum)[keyof typeof SorobanRentObservationScalarFieldEnum]
 
 
 export const SortOrder = {
