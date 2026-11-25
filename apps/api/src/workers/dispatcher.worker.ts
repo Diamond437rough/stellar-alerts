@@ -48,6 +48,10 @@ export interface WebhookDispatchJobData {
   ruleId?: string;
   /** Alert metadata for bundling (amount, fromAddress, etc.) */
   alertData?: Record<string, any>;
+  /** Per-webhook field masking policy applied before signing (#990). */
+  maskingPolicy?: MaskingPolicy | null;
+  /** Optional Matrix protocol room target for native Matrix alert dispatch (#1003). */
+  matrixConfig?: MatrixDispatchTarget;
 }
 
 export interface WebhookDispatchResult {
@@ -58,6 +62,9 @@ export interface WebhookDispatchResult {
   reason?: string;
   pinnedIp?: string;
   lane?: QueueLane;
+  eventId?: string;
+  txnId?: string;
+  retryAfterMs?: number;
 }
 
 export type WebhookTransportFn = (
@@ -67,7 +74,19 @@ export type WebhookTransportFn = (
   pinnedTarget?: PinnedWebhookTarget,
 ) => Promise<{ status: number; body?: string }>;
 
+/**
+ * Produces signature headers for the exact body that will be sent. Called
+ * AFTER masking so the signature covers the masked bytes.
+ */
+export type WebhookSignerFn = (
+  webhookId: string,
+  body: string,
+) => Promise<Record<string, string>>;
+
+const SIGNATURE_HEADER_NAMES = ["x-stellar-signature", "x-signature-secondary"];
+
 export class DispatcherWorker {
+  private signer?: WebhookSignerFn;
   private circuitBreaker: RedisCircuitBreaker;
   private workers: Map<QueueLane, Worker<WebhookDispatchJobData>> = new Map();
   private transport: WebhookTransportFn;
@@ -80,11 +99,15 @@ export class DispatcherWorker {
     transport?: WebhookTransportFn,
     filter?: SsrfFilter,
     laneManager?: QueueLaneManager,
+    signer?: WebhookSignerFn,
+    customMatrixDispatcher?: MatrixDispatcher,
   ) {
+    this.signer = signer;
     this.circuitBreaker = circuitBreaker || new RedisCircuitBreaker();
     this.transport = transport || this.defaultTransport.bind(this);
     this.ssrfFilter = filter || ssrfFilter;
     this.laneManager = laneManager || new QueueLaneManager();
+    this.matrixDispatcher = customMatrixDispatcher || matrixDispatcher;
   }
 
   private async defaultTransport(
@@ -182,6 +205,8 @@ export class DispatcherWorker {
       ruleId,
       alertData,
       severity,
+      maskingPolicy,
+      matrixConfig,
     } = job.data;
     const lane: QueueLane = job.data.lane ?? resolveLaneForAlert(job.data);
 
@@ -263,13 +288,14 @@ export class DispatcherWorker {
       };
     }
 
+    const targetUrl = matrixConfig ? matrixConfig.homeserverUrl : url;
     let pinnedTarget: PinnedWebhookTarget;
     try {
-      pinnedTarget = await this.ssrfFilter.validateAndResolve(url);
+      pinnedTarget = await this.ssrfFilter.validateAndResolve(targetUrl);
     } catch (err: any) {
       const statusCode = err instanceof SsrfBlockedError ? err.statusCode : 400;
       log.error(
-        { webhookId, url, reason: err.reason ?? err.message, statusCode, lane },
+        { webhookId, url: targetUrl, reason: err.reason ?? err.message, statusCode, lane },
         "[SECURITY_AUDIT] Blocked webhook dispatch due to SSRF egress policy",
       );
       return {
@@ -281,8 +307,140 @@ export class DispatcherWorker {
       };
     }
 
+    // Native Matrix protocol room dispatch (#1003)
+    if (matrixConfig) {
+      const maskedPayload = applyMaskingPolicy(payload, maskingPolicy).payload;
+      const matrixAlert: MatrixAlertPayload = {
+        alertId: String(
+          paymentId ?? maskedPayload.paymentId ?? maskedPayload.txHash ?? webhookId,
+        ),
+        title: typeof maskedPayload.title === "string" ? maskedPayload.title : undefined,
+        severity: severity ?? (typeof maskedPayload.severity === "string" ? maskedPayload.severity : undefined),
+        message: typeof maskedPayload.message === "string" ? maskedPayload.message : undefined,
+        txHash: typeof maskedPayload.txHash === "string" ? maskedPayload.txHash : undefined,
+        amount:
+          typeof maskedPayload.amount === "string" || typeof maskedPayload.amount === "number"
+            ? maskedPayload.amount
+            : undefined,
+        asset: typeof maskedPayload.asset === "string" ? maskedPayload.asset : undefined,
+        fromAddress:
+          typeof maskedPayload.fromAddress === "string" ? maskedPayload.fromAddress : undefined,
+        walletId: typeof maskedPayload.walletId === "string" ? maskedPayload.walletId : undefined,
+        memo: typeof maskedPayload.memo === "string" ? maskedPayload.memo : null,
+        receivedAt:
+          typeof maskedPayload.receivedAt === "string" ? maskedPayload.receivedAt : undefined,
+      };
+
+      try {
+        const { result: matrixResult, durationMs } =
+          await webhookTelemetry.measureDispatch(
+            webhookId,
+            matrixConfig.homeserverUrl,
+            async () => {
+              return await this.circuitBreaker.execute(webhookId, async () => {
+                const res = await this.matrixDispatcher.dispatchAlert(
+                  matrixConfig,
+                  matrixAlert,
+                );
+                if (!res.success && (res.statusCode ?? 0) >= 500) {
+                  const err: any = new Error(
+                    res.error ?? `Matrix homeserver returned HTTP ${res.statusCode}`,
+                  );
+                  err.statusCode = res.statusCode;
+                  throw err;
+                }
+                return res;
+              });
+            },
+            paymentId,
+          );
+
+        if (!matrixResult.success) {
+          return {
+            webhookId,
+            status: "failed",
+            statusCode: matrixResult.statusCode,
+            durationMs,
+            reason: matrixResult.error,
+            txnId: matrixResult.txnId,
+            retryAfterMs: matrixResult.retryAfterMs,
+            lane,
+          };
+        }
+
+        return {
+          webhookId,
+          status: "delivered",
+          statusCode: matrixResult.statusCode ?? 200,
+          durationMs,
+          pinnedIp: pinnedTarget.pinnedIp,
+          eventId: matrixResult.eventId,
+          txnId: matrixResult.txnId,
+          lane,
+        };
+      } catch (err: any) {
+        if (err instanceof CircuitBreakerOpenError) {
+          log.warn(
+            { webhookId, lane },
+            "Fast-fail: circuit breaker opened during Matrix dispatch",
+          );
+          return {
+            webhookId,
+            status: "skipped",
+            reason: "circuit_breaker_open",
+            lane,
+          };
+        }
+        log.error(
+          { webhookId, lane, err: err.message },
+          "Matrix alert delivery failed",
+        );
+        return {
+          webhookId,
+          status: "failed",
+          reason: err.message,
+          lane,
+        };
+      }
+    }
+
+    let payloadStr: string;
+    let sendHeaders = headers;
     try {
-      const payloadStr = JSON.stringify(payload);
+      // Mask first, sign second: the signature must cover the masked bytes.
+      const masked = applyMaskingPolicy(payload, maskingPolicy);
+      payloadStr = JSON.stringify(masked.payload);
+      if (masked.maskedCount > 0) {
+        log.debug(
+          { webhookId, maskedCount: masked.maskedCount, paths: masked.appliedPaths },
+          "Applied webhook field masking policy",
+        );
+        const hasStaleSignature = Object.keys(headers).some((h) =>
+          SIGNATURE_HEADER_NAMES.includes(h.toLowerCase()),
+        );
+        if (this.signer) {
+          const fresh = await this.signer(webhookId, payloadStr);
+          sendHeaders = {
+            ...Object.fromEntries(
+              Object.entries(headers).filter(
+                ([h]) => !SIGNATURE_HEADER_NAMES.includes(h.toLowerCase()),
+              ),
+            ),
+            ...fresh,
+          };
+        } else if (hasStaleSignature) {
+          // Fail closed: never deliver a signature that no longer matches.
+          throw new Error(
+            "Masking policy changed the payload but no signer is configured to re-sign it",
+          );
+        }
+      }
+    } catch (err: any) {
+      log.error({ webhookId, lane, err: err.message }, "Webhook masking/signing failed");
+      return { webhookId, status: "failed", reason: err.message, lane };
+    }
+
+    try {
       const { result: res, durationMs } =
         await webhookTelemetry.measureDispatch(
           webhookId,
@@ -292,7 +450,7 @@ export class DispatcherWorker {
               const response = await this.transport(
                 url,
                 payloadStr,
-                headers,
+                sendHeaders,
                 pinnedTarget,
               );
               if (response.status >= 500) {
