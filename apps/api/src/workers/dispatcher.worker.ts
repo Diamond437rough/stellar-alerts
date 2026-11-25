@@ -25,16 +25,7 @@ import {
   type PinnedWebhookTarget,
 } from "../modules/webhooks/ssrf-filter";
 import { alertStormBundler } from "../modules/notifications/storm-bundler";
-import {
-  matrixDispatcher,
-  MatrixDispatcher,
-  type MatrixAlertPayload,
-  type MatrixDispatchTarget,
-} from "../modules/notifications/matrix.dispatcher";
-import {
-  applyMaskingPolicy,
-  type MaskingPolicy,
-} from "../modules/webhooks/payload-masker";
+import { WorkerScaler } from "../lib/worker-scaler";
 
 const log = createLogger({ module: "WebhookDispatcherWorker" });
 
@@ -101,7 +92,7 @@ export class DispatcherWorker {
   private transport: WebhookTransportFn;
   private ssrfFilter: SsrfFilter;
   private laneManager: QueueLaneManager;
-  private matrixDispatcher: MatrixDispatcher;
+  private scaler: WorkerScaler | null = null;
 
   constructor(
     circuitBreaker?: RedisCircuitBreaker,
@@ -545,7 +536,11 @@ export class DispatcherWorker {
       );
     }
 
+    this.startAutoscaler(baseQueueName);
+
     registerRedisCleanupTask(async () => {
+      this.scaler?.stop();
+      this.scaler = null;
       await Promise.all(
         Array.from(this.workers.values()).map((w) => w.close()),
       );
@@ -553,6 +548,44 @@ export class DispatcherWorker {
     });
 
     return this.workers;
+  }
+
+  /**
+   * Attaches the adaptive worker scaler (#915). The scaler watches queue
+   * backlog, event-loop lag and heap pressure, then redistributes the new
+   * total concurrency across lanes in proportion to their configured shares.
+   */
+  private startAutoscaler(baseQueueName: string): void {
+    const lanes = Object.keys(QUEUE_LANE_CONFIGS) as QueueLane[];
+    const baseTotal = lanes.reduce((sum, lane) => sum + QUEUE_LANE_CONFIGS[lane].concurrency, 0);
+    const queueKeys = lanes.map(
+      (lane) => `bull:${this.laneManager.getQueueName(lane, baseQueueName)}:wait`,
+    );
+
+    this.scaler = new WorkerScaler(redis as any, baseTotal, {
+      workerName: "webhook-dispatcher",
+      queueKeys,
+    });
+
+    this.scaler.on("scale", (_previous, next, direction, reason) => {
+      let assigned = 0;
+      lanes.forEach((lane, index) => {
+        const worker = this.workers.get(lane);
+        if (!worker) return;
+        const share =
+          index === lanes.length - 1
+            ? Math.max(1, next - assigned)
+            : Math.max(1, Math.round((next * QUEUE_LANE_CONFIGS[lane].concurrency) / baseTotal));
+        assigned += share;
+        worker.concurrency = share;
+      });
+      log.info(
+        { totalConcurrency: next, direction, reason },
+        "Adaptive worker scaler adjusted dispatcher lane concurrency",
+      );
+    });
+
+    this.scaler.start();
   }
 
   /** Returns the worker for a specific lane (if started). */
@@ -565,6 +598,11 @@ export class DispatcherWorker {
   /** Returns the lane manager used by this worker (for metrics/integration tests). */
   public getLaneManager(): QueueLaneManager {
     return this.laneManager;
+  }
+
+  /** Returns the adaptive scaler attached to this dispatcher (if started). */
+  public getWorkerScaler(): WorkerScaler | null {
+    return this.scaler;
   }
 
   /** Returns fair scheduling statistics */
