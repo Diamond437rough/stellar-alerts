@@ -11,11 +11,12 @@ export * from './soroban/scval-parser';
 // Single source of truth for Stellar StrKey / transaction-hash validation
 // (Ed25519 public keys, contract IDs, muxed addresses, transaction hashes).
 export * from './strkey';
-// Request / response contracts for authentication flows (SEP-0010).
+export * from './utils/muxed';
 export * from './schemas/auth';
 export * from './schemas/vesting';
 export * from './schemas/defi';
 export * from './schemas/alerts';
+export * from './schemas/auth';
 
 const dateDTO = z.union([z.date(), z.string()]);
 
@@ -44,6 +45,16 @@ export const walletDTOSchema = z
   .passthrough();
 export type WalletDTO = z.infer<typeof walletDTOSchema>;
 
+export const paymentSecurityWarningSchema = z.object({
+  type: z.literal('ADDRESS_POISONING'),
+  banner: z.string(),
+  message: z.string(),
+  spoofedCounterparty: z.string(),
+  matchedPrefix: z.string(),
+  matchedSuffix: z.string(),
+});
+export type PaymentSecurityWarningDTO = z.infer<typeof paymentSecurityWarningSchema>;
+
 export const paymentDTOSchema = z
   .object({
     id: z.string(),
@@ -54,6 +65,8 @@ export const paymentDTOSchema = z
     asset: z.string(),
     memo: z.string().nullable().optional(),
     receivedAt: dateDTO,
+    isQuarantined: z.boolean().optional(),
+    securityWarning: paymentSecurityWarningSchema.nullable().optional(),
   })
   .passthrough();
 export type PaymentDTO = z.infer<typeof paymentDTOSchema>;

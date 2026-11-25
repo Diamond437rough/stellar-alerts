@@ -52,3 +52,6 @@ override.tf.json
 *_override.tf.json
 .terraformrc
 terraform.rc
+
+# Local alert spillover journal (lib/queue/disk-spillover.ts)
+.data/
