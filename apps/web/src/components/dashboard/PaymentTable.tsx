@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { PaymentDTO, filterPayments, extractAvailableAssets } from '@stellar-alerts/shared';
 import { CopyButton } from '@/components/ui/CopyButton';
+import { AddressTruncate } from '@/components/common/AddressTruncate';
 import { formatAssetAmount } from './currency';
 import { useCurrencyPreference } from './CurrencyPreference';
 
@@ -332,30 +333,9 @@ export const PaymentTable: React.FC<PaymentTableProps> = ({ payments = [], isLoa
                     </span>
                   </td>
                   <td className="py-3.5 px-4 font-mono text-xs text-slate-400 whitespace-nowrap">
-                    {isQuarantined ? (
-                      <div className="space-y-1">
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-red-600/30 text-red-200 border border-red-500/50 text-[10px] font-bold tracking-wide uppercase">
-                          <span aria-hidden="true">⚠</span>
-                          {payment.securityWarning?.banner || 'PHISHING / ADDRESS POISONING WARNING'}
-                        </span>
-                        <div className="flex items-center gap-1.5 text-red-200/90" title={payment.fromAddress}>
-                          <span className="line-through">
-                            {payment.fromAddress.length > 16
-                              ? `${payment.fromAddress.substring(0, 8)}...${payment.fromAddress.substring(payment.fromAddress.length - 8)}`
-                              : payment.fromAddress}
-                          </span>
-                          <span className="text-[10px] font-sans text-red-300 font-semibold">
-                            (Copy blocked)
-                          </span>
-                        </div>
-                      </div>
-                    ) : payment.fromAddress ? (
-                      <span className="flex items-center gap-1.5" title={payment.fromAddress}>
-                        <span>
-                          {payment.fromAddress.length > 16
-                            ? `${payment.fromAddress.substring(0, 8)}...${payment.fromAddress.substring(payment.fromAddress.length - 8)}`
-                            : payment.fromAddress}
-                        </span>
+                    {payment.fromAddress ? (
+                      <span className="flex items-center gap-1.5">
+                        <AddressTruncate value={payment.fromAddress} prefixChars={8} suffixChars={8} />
                         <CopyButton
                           text={payment.fromAddress}
                           label="Copy sender address"
@@ -374,7 +354,11 @@ export const PaymentTable: React.FC<PaymentTableProps> = ({ payments = [], isLoa
                         aria-label={`View transaction ${payment.txHash} on Stellar Explorer`}
                         className="text-blue-400 hover:text-blue-300 underline underline-offset-2 transition-colors flex items-center gap-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/70 focus-visible:rounded"
                       >
-                        <span>{payment.txHash ? `${payment.txHash.substring(0, 8)}...` : 'View Tx'}</span>
+                        {payment.txHash ? (
+                          <AddressTruncate value={payment.txHash} prefixChars={8} suffixChars={4} />
+                        ) : (
+                          'View Tx'
+                        )}
                         <span className="text-[10px]" aria-hidden="true">↗</span>
                       </a>
                       {payment.txHash && (
